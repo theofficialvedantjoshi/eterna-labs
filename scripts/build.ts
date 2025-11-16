@@ -2,9 +2,6 @@ import fs from "fs-extra";
 import logger from "jet-logger";
 import childProcess from "child_process";
 
-/**
- * Start
- */
 (async () => {
   try {
     // Remove current build
@@ -13,7 +10,6 @@ import childProcess from "child_process";
     await exec("tsc --build tsconfig.prod.json", "./");
     // Copy bundled assets
     await copyIfExists("./public", "./dist/public");
-    await copy("./src/views", "./dist/views");
     await copy("./temp/config.js", "./config.js");
     await copy("./temp/src", "./dist");
     await remove("./temp/");
@@ -24,9 +20,6 @@ import childProcess from "child_process";
   }
 })();
 
-/**
- * Remove file
- */
 function remove(loc: string): Promise<void> {
   return new Promise((res, rej) => {
     return fs.remove(loc, (err) => {
@@ -35,9 +28,6 @@ function remove(loc: string): Promise<void> {
   });
 }
 
-/**
- * Copy file.
- */
 function copy(src: string, dest: string): Promise<void> {
   return new Promise((res, rej) => {
     return fs.copy(src, dest, (err) => {
@@ -55,9 +45,6 @@ async function copyIfExists(src: string, dest: string): Promise<void> {
   await copy(src, dest);
 }
 
-/**
- * Do command line command.
- */
 function exec(cmd: string, loc: string): Promise<void> {
   return new Promise((res, rej) => {
     return childProcess.exec(cmd, { cwd: loc }, (err, stdout, stderr) => {
