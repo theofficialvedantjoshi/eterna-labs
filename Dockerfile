@@ -23,7 +23,6 @@ ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=production-deps /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/config ./config
 COPY --from=builder /app/config.js ./config.js
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
