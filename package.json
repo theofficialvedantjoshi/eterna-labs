@@ -7,7 +7,7 @@
     "dev": "NODE_ENV=development ts-node ./src/server.ts",
     "dev:hot": "nodemon --exec \"npm run dev\" --watch ./src --ext .ts",
     "lint": "eslint .",
-    "start": "NODE_ENV=production node -r ./config.js ./dist",
+    "start": "NODE_ENV=production node -r ./config.js ./dist/server.js",
     "test": "NODE_ENV=test vitest",
     "type-check": "tsc --noEmit"
   },
