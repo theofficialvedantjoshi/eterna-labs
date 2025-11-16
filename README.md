@@ -68,7 +68,7 @@ Clients should first call the REST endpoint for an initial snapshot, then subscr
 
 ### Usage
 
-Public URL `https://eterna-labs.onrender.com/` (might face issues due to redis connection issue).
+Public URL `https://eterna-labs-production.up.railway.app/`.
 
 ## Testing
 
