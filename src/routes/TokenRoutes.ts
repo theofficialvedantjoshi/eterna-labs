@@ -8,12 +8,8 @@ export const createTokenRoutes = (tokenService: TokenService): Router => {
 
   router.get("/", async (req, res) => {
     try {
-      const limit = (req.query.limit as string)
-        ? parseInt(req.query.limit as string)
-        : 20;
-      const cursor = (req.query.limit as string)
-        ? parseInt(req.query.limit as string)
-        : 0;
+      const limit = req.query.limit ? Number(req.query.limit) : 20;
+      const cursor = req.query.cursor ? Number(req.query.cursor) : 0;
       const sortBy = (req.query.sort_by as string) || "market_cap";
       const timePeriod = (req.query.time_period as string) || "1h";
       console.log("Received GET /tokens with params:", {
@@ -27,7 +23,9 @@ export const createTokenRoutes = (tokenService: TokenService): Router => {
         !sorts.includes(sortBy) ||
         !timePeriods.includes(timePeriod) ||
         limit <= 0 ||
-        cursor < 0
+        cursor < 0 ||
+        Number.isNaN(limit) ||
+        Number.isNaN(cursor)
       ) {
         return res.status(400).json({ message: "Invalid query parameters" });
       }
