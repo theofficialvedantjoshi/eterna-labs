@@ -66,6 +66,10 @@ Responses include `{ tokens: TokenResponse[], next_cursor: number | null }`. Inv
 
 Clients should first call the REST endpoint for an initial snapshot, then subscribe to `token_updates` for diffs.
 
+### Usage
+
+Public URL `https://eterna-labs.onrender.com/` (might face issues due to redis connection issue).
+
 ## Testing
 
 - 13 Vitest specs exercise caching, pagination, stats selection, diff emission, scheduler wiring, and route validation.
