@@ -9,7 +9,7 @@ import { TokenCacheRepo } from "@src/repos/TokenCacheRepo";
 import { JupiterPriceClient } from "@src/clients/JupiterPrice";
 import { DexScreenerClient } from "@src/clients/DexScreener";
 import { CoinGeckoClient } from "@src/clients/CoinGecko";
-import { CoinGeckoTokenData } from "@src/models/CoinGecko";
+import { CoinGeckoTokenData, CoinGeckoToken } from "@src/models/CoinGecko";
 import { JupiterToken } from "@src/models/JupiterPrice";
 import { DexScreenerTokenPair } from "@src/models/DexScreener";
 
@@ -33,16 +33,18 @@ export class TokenService {
 
     const isAlphanumeric = (s: string) => /^[A-Za-z0-9]+$/.test(s);
     const coinGeckoTokensList = await this.coinGeckoClient.getTokens();
-    const tokenAdressesSet = new Set<string>();
-    if (coinGeckoTokensList) {
-      for (const token of coinGeckoTokensList.data) {
-        if (isAlphanumeric(token.attributes.address)) {
-          tokenAdressesSet.add(token.attributes.address);
-        }
+    if (!coinGeckoTokensList) {
+      console.error("Failed to fetch tokens from CoinGecko");
+      return;
+    }
+    const allTokenAddresses: string[] = [];
+    for (const tokenData of coinGeckoTokensList.data) {
+      const address = tokenData.attributes.address;
+      if (isAlphanumeric(address)) {
+        allTokenAddresses.push(address);
       }
     }
-    const tokenAdresses = Array.from(tokenAdressesSet).slice(0, 30).join(",");
-    const tokenMap = await this.getTokenMap(tokenAdresses);
+    const tokenMap = await this.getTokenMap(allTokenAddresses);
     const updatedTokens = this.getAggregateToken(tokenMap);
     console.log(`Fetched ${updatedTokens.length} tokens.`);
     const updates = this.getUpdates(prevTokens, updatedTokens);
@@ -215,7 +217,7 @@ export class TokenService {
     return updatedTokens;
   }
 
-  private async getTokenMap(tokenAdresses: string): Promise<
+  private async getTokenMap(allTokenAddresses: string[]): Promise<
     Map<
       string,
       {
@@ -225,6 +227,25 @@ export class TokenService {
       }
     >
   > {
+    const tokenAdressChunks: string[][] = [];
+    for (let i = 0; i < allTokenAddresses.length; i += 30) {
+      tokenAdressChunks.push(allTokenAddresses.slice(i, i + 30));
+    }
+    const dexScreenerTokens: DexScreenerTokenPair[] = [];
+    const coinGeckoTokens: CoinGeckoToken = { data: [] };
+    for (const chunk of tokenAdressChunks) {
+      const [dsTokens, cgTokens] = await Promise.all([
+        this.dexScreenerClient.getTokensByAddress(chunk.join(",")),
+        this.coinGeckoClient.getTokensByAddress(chunk.join(",")),
+      ]);
+      dexScreenerTokens.push(...dsTokens);
+      if (cgTokens) {
+        coinGeckoTokens.data.push(...cgTokens.data);
+      }
+    }
+    const jupiterTokens = await this.jupiterPriceClient.getTokens(
+      allTokenAddresses.join(",")
+    );
     const tokenMap = new Map<
       string,
       {
@@ -233,12 +254,6 @@ export class TokenService {
         jupiterPriceData?: JupiterToken;
       }
     >();
-    const [dexScreenerTokens, coinGeckoTokens, jupiterTokens] =
-      await Promise.all([
-        this.dexScreenerClient.getTokensByAddress(tokenAdresses),
-        this.coinGeckoClient.getTokensByAddress(tokenAdresses),
-        this.jupiterPriceClient.getTokens(tokenAdresses),
-      ]);
     for (const pair of dexScreenerTokens) {
       const prevData = tokenMap.get(pair.baseToken.address) ?? {};
       prevData.dexScreenerData = pair;
