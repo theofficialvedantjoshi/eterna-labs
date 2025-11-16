@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "c39d4402-fdde-4d10-bd69-178bea90d7d4",
-		"name": "eterna",
+		"name": "eterna-https",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "29865492"
 	},
@@ -1066,7 +1066,7 @@
 	"variable": [
 		{
 			"key": "baseURL",
-			"value": "http://localhost:8080",
+			"value": "",
 			"type": "default"
 		}
 	]
