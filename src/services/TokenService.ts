@@ -43,86 +43,7 @@ export class TokenService {
     }
     const tokenAdresses = Array.from(tokenAdressesSet).slice(0, 30).join(",");
     const tokenMap = await this.getTokenMap(tokenAdresses);
-    const updatedTokens: Token[] = [];
-    for (const [address, data] of tokenMap.entries()) {
-      const updatedToken: Token = {} as Token;
-      updatedToken.token_address = address;
-      if (data.dexScreenerData) {
-        updatedToken.token_name = data.dexScreenerData.baseToken.name;
-        updatedToken.token_ticker = data.dexScreenerData.baseToken.symbol;
-      }
-      if (data.jupiterPriceData) {
-        updatedToken.price_usd =
-          (data.jupiterPriceData.usdPrice || data.dexScreenerData?.priceUsd) ??
-          0;
-        updatedToken.liquidity_usd =
-          (data.jupiterPriceData.liquidity ||
-            data.dexScreenerData?.liquidity.usd) ??
-          0;
-        updatedToken.stats = {} as { h1: stats; h6: stats; h24: stats };
-        updatedToken.stats.h1 = {
-          volume:
-            (data.jupiterPriceData?.stats1h?.buyVolume +
-              data.jupiterPriceData?.stats1h?.sellVolume ||
-              data.dexScreenerData?.volume.h1) ??
-            0,
-          price_change:
-            (data.jupiterPriceData?.stats1h?.priceChange ||
-              data.dexScreenerData?.priceChange.h1) ??
-            0,
-          transaction_count:
-            data.jupiterPriceData?.stats1h?.numBuys +
-              data.jupiterPriceData?.stats1h?.numSells ||
-            (data.dexScreenerData
-              ? data.dexScreenerData?.txns?.h1?.buys +
-                data.dexScreenerData?.txns?.h1?.sells
-              : 0),
-        };
-        updatedToken.stats.h6 = {
-          volume:
-            (data.jupiterPriceData?.stats6h?.buyVolume +
-              data.jupiterPriceData?.stats6h?.sellVolume ||
-              data.dexScreenerData?.volume?.h6) ??
-            0,
-          price_change:
-            (data.jupiterPriceData?.stats6h?.priceChange ||
-              data.dexScreenerData?.priceChange?.h6) ??
-            0,
-          transaction_count:
-            data.jupiterPriceData?.stats6h?.numBuys +
-              data.jupiterPriceData?.stats6h?.numSells ||
-            (data.dexScreenerData
-              ? data.dexScreenerData?.txns?.h6?.buys +
-                data.dexScreenerData?.txns?.h6?.sells
-              : 0),
-        };
-        updatedToken.stats.h24 = {
-          volume:
-            (data.jupiterPriceData?.stats24h?.buyVolume +
-              data.jupiterPriceData?.stats24h?.sellVolume ||
-              data.dexScreenerData?.volume.h24) ??
-            0,
-          price_change:
-            (data.jupiterPriceData?.stats24h?.priceChange ||
-              data.dexScreenerData?.priceChange?.h24) ??
-            0,
-          transaction_count:
-            data.jupiterPriceData?.stats24h?.numBuys +
-              data.jupiterPriceData?.stats24h?.numSells ||
-            (data.dexScreenerData
-              ? data.dexScreenerData?.txns?.h24?.buys +
-                data.dexScreenerData?.txns?.h24?.sells
-              : 0),
-        };
-      }
-      if (data.coinGeckoData) {
-        updatedToken.market_cap_usd =
-          (data.coinGeckoData.attributes.market_cap_usd ||
-            data.dexScreenerData?.marketCap) ??
-          0;
-      }
-      updatedTokens.push(updatedToken);
-    }
+    const updatedTokens = this.getAggregateToken(tokenMap);
     console.log(`Fetched ${updatedTokens.length} tokens.`);
     const updates = this.getUpdates(prevTokens, updatedTokens);
     if (updates.length > 0) {
@@ -176,6 +97,122 @@ export class TokenService {
       tokens: tokenResponses,
       next_cursor: nextCursor,
     };
+  }
+
+  private getAggregateToken(
+    tokenMap: Map<
+      string,
+      {
+        dexScreenerData?: DexScreenerTokenPair;
+        coinGeckoData?: CoinGeckoTokenData;
+        jupiterPriceData?: JupiterToken;
+      }
+    >
+  ): Token[] {
+    const updatedTokens: Token[] = [];
+    for (const [address, data] of tokenMap.entries()) {
+      const updatedToken: Token = {} as Token;
+      updatedToken.token_address = address;
+
+      updatedToken.token_name =
+        data.dexScreenerData?.baseToken.name ??
+        data.coinGeckoData?.attributes.name ??
+        "N/A";
+      updatedToken.token_ticker =
+        data.dexScreenerData?.baseToken.symbol ??
+        data.coinGeckoData?.attributes.symbol ??
+        "N/A";
+
+      updatedToken.price_usd =
+        data.jupiterPriceData?.usdPrice ??
+        data.dexScreenerData?.priceUsd ??
+        data.coinGeckoData?.attributes.price_usd ??
+        0;
+      updatedToken.liquidity_usd =
+        data.jupiterPriceData?.liquidity ??
+        data.dexScreenerData?.liquidity.usd ??
+        0;
+      updatedToken.market_cap_usd =
+        data.dexScreenerData?.marketCap ??
+        data.coinGeckoData?.attributes.market_cap_usd ??
+        0;
+
+      updatedToken.stats = {} as { h1: stats; h6: stats; h24: stats };
+      const jupiterStatsMap = {
+        h1: data.jupiterPriceData?.stats1h,
+        h6: data.jupiterPriceData?.stats6h,
+        h24: data.jupiterPriceData?.stats24h,
+      };
+      const jupiterVolumeMap = {
+        h1: jupiterStatsMap.h1
+          ? (jupiterStatsMap.h1.buyVolume ?? 0) +
+            (jupiterStatsMap.h1.sellVolume ?? 0)
+          : 0,
+        h6: jupiterStatsMap.h6
+          ? (jupiterStatsMap.h6.buyVolume ?? 0) +
+            (jupiterStatsMap.h6.sellVolume ?? 0)
+          : 0,
+        h24: jupiterStatsMap.h24
+          ? (jupiterStatsMap.h24.buyVolume ?? 0) +
+            (jupiterStatsMap.h24.sellVolume ?? 0)
+          : 0,
+      };
+      const jupiterTransactionMap = {
+        h1: jupiterStatsMap.h1
+          ? (jupiterStatsMap.h1.numBuys ?? 0) +
+            (jupiterStatsMap.h1.numSells ?? 0)
+          : 0,
+        h6: jupiterStatsMap.h6
+          ? (jupiterStatsMap.h6.numBuys ?? 0) +
+            (jupiterStatsMap.h6.numSells ?? 0)
+          : 0,
+        h24: jupiterStatsMap.h24
+          ? (jupiterStatsMap.h24.numBuys ?? 0) +
+            (jupiterStatsMap.h24.numSells ?? 0)
+          : 0,
+      };
+      updatedToken.stats.h1 = {
+        volume: jupiterVolumeMap.h1 ?? data.dexScreenerData?.volume.h1 ?? 0,
+        price_change:
+          jupiterStatsMap.h1?.priceChange ??
+          data.dexScreenerData?.priceChange.h1 ??
+          0,
+        transaction_count:
+          jupiterTransactionMap.h1 ??
+          (data.dexScreenerData
+            ? data.dexScreenerData?.txns?.h1?.buys +
+              data.dexScreenerData?.txns?.h1?.sells
+            : 0),
+      };
+      updatedToken.stats.h6 = {
+        volume: jupiterVolumeMap.h6 ?? data.dexScreenerData?.volume.h6 ?? 0,
+        price_change:
+          jupiterStatsMap.h6?.priceChange ??
+          data.dexScreenerData?.priceChange.h6 ??
+          0,
+        transaction_count:
+          jupiterTransactionMap.h6 ??
+          (data.dexScreenerData
+            ? data.dexScreenerData?.txns?.h6?.buys +
+              data.dexScreenerData?.txns?.h6?.sells
+            : 0),
+      };
+      updatedToken.stats.h24 = {
+        volume: jupiterVolumeMap.h24 ?? data.dexScreenerData?.volume.h24 ?? 0,
+        price_change:
+          jupiterStatsMap.h24?.priceChange ??
+          data.dexScreenerData?.priceChange.h24 ??
+          0,
+        transaction_count:
+          jupiterTransactionMap.h24 ??
+          (data.dexScreenerData
+            ? data.dexScreenerData?.txns?.h24?.buys +
+              data.dexScreenerData?.txns?.h24?.sells
+            : 0),
+      };
+      updatedTokens.push(updatedToken);
+    }
+    return updatedTokens;
   }
 
   private async getTokenMap(tokenAdresses: string): Promise<
