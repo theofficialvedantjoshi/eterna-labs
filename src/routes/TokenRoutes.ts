@@ -8,8 +8,12 @@ export const createTokenRoutes = (tokenService: TokenService): Router => {
 
   router.get("/", async (req, res) => {
     try {
-      const limit = parseInt(req.query.limit as string) || 20;
-      const cursor = parseInt(req.query.cursor as string) || 0;
+      const limit = (req.query.limit as string)
+        ? parseInt(req.query.limit as string)
+        : 20;
+      const cursor = (req.query.limit as string)
+        ? parseInt(req.query.limit as string)
+        : 0;
       const sortBy = (req.query.sort_by as string) || "market_cap";
       const timePeriod = (req.query.time_period as string) || "1h";
       console.log("Received GET /tokens with params:", {
