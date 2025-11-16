@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Eterna Token Monitor</title>
+    <link rel="stylesheet" href="/styles.css" />
+</head>
+
+<body>
+    <header class="page-header">
+        <h1>Eterna Labs Backend Task 1</h1>
+    </header>
+
+    <section class="panel controls" aria-label="Display controls">
+        <div class="control">
+            <label for="timeRangeSelect">Time range</label>
+            <select id="timeRangeSelect"></select>
+        </div>
+        <div class="control">
+            <label for="sortSelect">Sort by</label>
+            <select id="sortSelect"></select>
+        </div>
+        <div class="control">
+            <label for="pageSizeSelect">Tokens per page</label>
+            <select id="pageSizeSelect"></select>
+        </div>
+        <div class="control">
+            <label for="searchInput">Filter tokens</label>
+            <input id="searchInput" type="search" placeholder="Name, ticker, or address" />
+        </div>
+    </section>
+
+    <section class="panel status" aria-live="polite">
+        <div id="statusMessage">Loading token data…</div>
+        <div id="lastUpdated"></div>
+    </section>
+
+    <section class="panel summary">
+        <div id="tokenCount">0 tokens cached</div>
+        <div id="updateSource">Awaiting WebSocket updates…</div>
+    </section>
+
+    <section class="panel token-list" aria-live="polite">
+        <div id="tokenContainer" class="token-container"></div>
+    </section>
+
+    <nav class="panel pagination" aria-label="Pagination controls">
+        <button id="prevPage" type="button">Prev</button>
+        <span id="pageIndicator">Page 1</span>
+        <button id="nextPage" type="button">Next</button>
+    </nav>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/app.js" type="module"></script>
+</body>
+
+</html>
