@@ -5,16 +5,12 @@ import ENV from "@src/common/constants/ENV";
 const KEY = "tokens:all";
 const CACHE_TTL = ENV.CacheTtlSeconds ?? 30;
 
-const redisHost = ENV.RedisHost ?? "127.0.0.1";
-const redisPort = ENV.RedisPort ?? 6379;
+const redisURL = ENV.RedisURL;
 
 export class TokenCacheRepo {
   private redis: Redis;
   constructor() {
-    this.redis = new Redis({
-      host: redisHost,
-      port: redisPort,
-    });
+    this.redis = new Redis(redisURL);
   }
   public async setTokens(tokens: Token[]): Promise<void> {
     await this.redis.set(KEY, JSON.stringify(tokens), "EX", CACHE_TTL);

@@ -6,8 +6,7 @@ import { NodeEnvs } from ".";
 const ENV = jetEnv({
   NodeEnv: isEnumVal(NodeEnvs),
   Port: num,
-  RedisHost: String,
-  RedisPort: num,
+  RedisURL: String,
   CacheTtlSeconds: num,
   DataRefreshCron: String,
   CoingeckoApiKey: String,
